@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <div class="page-subtitle">Overview of your loan portfolio</div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Total I Owe</div>
+      <i class="bi bi-arrow-up-right kpi-icon kpi-icon-danger"></i>
+    </div>
+    <div class="kpi-number kpi-danger">Rs {{ "{:,.0f}".format(i_owe) }}</div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Owed to Me</div>
+      <i class="bi bi-arrow-down-right kpi-icon"></i>
+    </div>
+    <div class="kpi-number">Rs {{ "{:,.0f}".format(owed_to_me) }}</div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Net Position</div>
+      <i class="bi bi-graph-up-arrow kpi-icon"></i>
+    </div>
+    <div class="kpi-number">Rs {{ "{:,.0f}".format(net_position|abs) }} <span class="kpi-unit">{{ 'receivable' if net_position > 0 else 'payable' if net_position < 0 else '' }}</span></div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Overdue Loans</div>
+      <i class="bi bi-exclamation-circle kpi-icon kpi-icon-danger"></i>
+    </div>
+    <div class="kpi-number kpi-danger">{{ overdue_loans }}</div>
+  </div>
+</div>
+
+<div class="panel-grid">
+  <div class="panel-card is-chart">
+    <div class="panel-head">
+      <div class="panel-head-title">Monthly Cashflow</div>
+    </div>
+    <div class="panel-body chart-panel p-3">
+      <canvas id="monthlyChart" class="chart-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title">Outstanding by Person</div>
+    </div>
+    <div class="panel-body chart-panel">
+      <canvas id="pieChart" class="chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="panel-grid">
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title">
+        <i class="bi bi-exclamation-circle me-2 text-danger"></i>Overdue Loans
+      </div>
+    </div>
+    <div class="panel-body p-0">
+      <table class="table table-overdue mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Person</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Days</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if overdue_list %}
+            {% for item in overdue_list %}
+              <tr>
+                <td class="fw-semibold">{{ item.name }}</td>
+                <td class="text-end">Rs {{ "{:,.0f}".format(item.amount) }}</td>
+                <td class="text-end">
+                  <span class="pill-danger">{{ item.days }}d</span>
+                </td>
+                <td class="text-end">
+                  <a class="action-icon" href="#" aria-label="View"><i class="bi bi-eye"></i></a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-4">No overdue loans</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title">
+        <i class="bi bi-clock me-2"></i>Upcoming Due Dates
+      </div>
+    </div>
+
+    {% if upcoming_due and upcoming_due|length > 0 %}
+      <div class="panel-body p-0">
+        <div class="table-responsive">
+          <table class="table table-surface align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Person</th>
+                <th class="text-end">Amount</th>
+                <th class="text-end">Due</th>
+                <th class="text-end" style="width:64px;">&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in upcoming_due %}
+              <tr>
+                <td class="fw-semibold">{{ r.person_name }}</td>
+                <td class="text-end">Rs {{ r.remaining }}</td>
+                <td class="text-end">{{ r.due_date }}</td>
+                <td class="text-end">
+                  <a class="action-icon" href="{{ url_for('loan_view', loan_id=r.loan_id) }}" aria-label="View">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="panel-body panel-empty">
+        <div class="text-muted">No upcoming due dates</div>
+      </div>
+    {% endif %}
+</div>
+
+
+<script>
+  const monthlyData = JSON.parse('{{ monthly_cashflow | safe }}');
+  const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+
+  new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+      labels: monthlyData.labels,
+      datasets: [{
+        data: monthlyData.data,
+        backgroundColor: monthlyData.colors,
+        borderRadius: 6,
+        barPercentage: 0.55,
+        categoryPercentage: 0.7
+      }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 0, right: 8, bottom: 0, left: 8 } },
+        plugins: { legend: { display: false } },
+        scales: {
+            x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
+            },
+            y: {
+            beginAtZero: true,
+            grid: {
+                color: 'rgba(148,163,184,.55)',
+                borderDash: [4,4],     // dotted feel like figma
+                drawBorder: false
+            },
+            ticks: { font: { size: 11 } }
+            }
+        }
+        }
+
+
+  });
+
+  const pieData = JSON.parse('{{ outstanding_pie | safe }}');
+  const pieLabels = pieData.map(d => d.name);
+  const pieValues = pieData.map(d => d.amount);
+  const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+  new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieValues,
+        backgroundColor: ['#111827','#4B5563','#6B7280','#9CA3AF','#D1D5DB','#E5E7EB']
+      }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: 0 },
+        plugins: {
+            legend: {
+            position: 'right',
+            labels: { boxWidth: 10, boxHeight: 10, padding: 10, font: { size: 10 } }
+            }
+        },
+        radius: '70%'
+        }
+
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Reports · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Reports</h1>
+    <div class="page-subtitle">Analytics and insights</div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Total Principal</div>
+    </div>
+    <div class="kpi-number">Rs {{ "{:,.0f}".format(total_principal or 0) }}</div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Active Loans</div>
+    </div>
+    <div class="kpi-number">{{ active_loans or 0 }}</div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Closed Loans</div>
+    </div>
+    <div class="kpi-number">{{ closed_loans or 0 }}</div>
+  </div>
+
+  <div class="kpi-tile">
+    <div class="kpi-top">
+      <div class="kpi-title">Total People</div>
+    </div>
+    <div class="kpi-number">{{ total_people or 0 }}</div>
+  </div>
+</div>
+
+<div class="panel-grid">
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title panel-head-title-lg">Monthly Repayments vs Disbursements</div>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap chart-wrap-tall">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title panel-head-title-lg">Balance by Person</div>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap chart-wrap-tall">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel-grid">
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title panel-head-title-lg">Outstanding by Direction</div>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap">
+        <canvas id="directionPie"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-head">
+      <div class="panel-head-title panel-head-title-lg">Loans by Status</div>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap">
+        <canvas id="statusPie"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const lineData = JSON.parse('{{ monthly_line | safe }}');
+  const lineCtx = document.getElementById('lineChart').getContext('2d');
+
+  new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: lineData.labels,
+      datasets: [{
+        data: lineData.data,
+        borderColor: '#111827',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 4,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.35)' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  const barData = JSON.parse('{{ balance_bar | safe }}');
+  const barLabels = barData.map(d => d.name);
+  const iOweData = barData.map(d => d.i_owe);
+  const owedData = barData.map(d => d.owed_to_me);
+  const barCtx = document.getElementById('barChart').getContext('2d');
+
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: barLabels,
+      datasets: [
+        { label: 'I Owe', data: iOweData, backgroundColor: '#d63b32', borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.75 },
+        { label: 'Owed to Me', data: owedData, backgroundColor: '#374151', borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.75 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { intersect: false }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, grid: { color: 'rgba(156, 163, 175, 0.35)' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  const dirPie = JSON.parse('{{ outstanding_direction | safe }}');
+  const dirCtx = document.getElementById('directionPie').getContext('2d');
+
+  new Chart(dirCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['I Owe', 'Owed to Me'],
+      datasets: [{
+        data: [dirPie.i_owe, dirPie.owed_to_me],
+        backgroundColor: ['#111827', '#94a3b8'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  const statusPie = JSON.parse('{{ status_pie | safe }}');
+  const statusCtx = document.getElementById('statusPie').getContext('2d');
+
+  new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Active', 'Closed'],
+      datasets: [{
+        data: [statusPie.active, statusPie.closed],
+        backgroundColor: ['#111827', '#94a3b8'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}

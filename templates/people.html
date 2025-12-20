@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}People · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">People</h1>
+    <div class="page-subtitle">Manage your contacts</div>
+  </div>
+
+  <button type="button" class="btn btn-page-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+    <i class="bi bi-plus-lg"></i>
+    <span>Add Person</span>
+  </button>
+</div>
+
+<div class="card-surface">
+  <div class="card-surface-toolbar">
+    <div class="surface-search">
+      <i class="bi bi-search"></i>
+      <input type="search" class="form-control" placeholder="Search people..." aria-label="Search people">
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-surface align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Active Loans</th>
+          <th class="text-end">I Owe</th>
+          <th class="text-end">They Owe</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for person in people %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-circle">
+                <i class="bi bi-person"></i>
+              </div>
+              <div class="fw-semibold">{{ person.name }}</div>
+            </div>
+          </td>
+          <td class="text-muted">{{ person.phone }}</td>
+          <td>
+            <span class="badge badge-count">{{ person.active_loans }}</span>
+          </td>
+          <td class="text-end amount-negative">Rs {{ person.i_owe or 0 }}</td>
+          <td class="text-end amount-neutral">Rs {{ person.they_owe or 0 }}</td>
+          <td class="text-end">
+            <div class="action-icons">
+              <a href="{{ url_for('person_view', person_id=person.id) }}" class="action-icon" aria-label="View">
+                <i class="bi bi-eye"></i>
+              </a>
+
+              <a href="#" class="action-icon" aria-label="Edit"
+                data-bs-toggle="modal" data-bs-target="#editPersonModal-{{ person.id }}">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <form method="POST" action="{{ url_for('person_delete', person_id=person.id) }}"
+                    class="d-inline" onsubmit="return confirm('Delete this person?');">
+                <button type="submit" class="action-icon is-danger" aria-label="Delete" style="border:0;background:transparent;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade modal-sheet" id="addPersonModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Person</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="POST" action="/add_person">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name *</label>
+            <input type="text" class="form-control" name="name" placeholder="Enter name" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="text" class="form-control" name="phone" placeholder="0300-1234567">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" placeholder="email@example.com">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" placeholder="Additional notes..." rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Add Person</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

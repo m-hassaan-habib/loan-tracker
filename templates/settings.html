@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Settings · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Settings</h1>
+    <div class="page-subtitle">Manage your preferences</div>
+  </div>
+</div>
+
+<div class="settings-stack">
+
+  <section class="settings-panel">
+    <div class="settings-panel-head">
+      <div class="settings-panel-title">Appearance</div>
+      <div class="settings-panel-subtitle">Customize how LoanTracker looks</div>
+    </div>
+
+    <form method="POST" class="settings-panel-body">
+      <div class="settings-row">
+        <div class="settings-left">
+          <div class="settings-label">Theme</div>
+          <div class="settings-help">Select light or dark mode</div>
+        </div>
+
+        <div class="settings-right">
+          <select name="theme" class="form-select settings-select">
+            <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
+            <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button type="submit" class="btn btn-dark settings-save">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="settings-panel">
+    <div class="settings-panel-head">
+      <div class="settings-panel-title">Currency</div>
+      <div class="settings-panel-subtitle">Currency settings for the app</div>
+    </div>
+
+    <div class="settings-panel-body">
+      <div class="settings-row">
+        <div class="settings-left">
+          <div class="settings-label">Default Currency</div>
+          <div class="settings-help">All amounts are shown in {{ currency }}</div>
+        </div>
+
+        <div class="settings-right">
+          <div class="settings-value">{{ currency }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-panel">
+    <div class="settings-panel-head">
+      <div class="settings-panel-title">Notifications</div>
+      <div class="settings-panel-subtitle">Manage notification preferences</div>
+    </div>
+
+    <div class="settings-panel-body">
+      <div class="settings-row">
+        <div class="settings-left">
+          <div class="settings-label">Due Date Reminders</div>
+          <div class="settings-help">Get notified before loans are due</div>
+        </div>
+
+        <div class="settings-right">
+          <label class="switch">
+            <input type="checkbox" {% if due_reminders %}checked{% endif %} disabled>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-left">
+          <div class="settings-label">Overdue Alerts</div>
+          <div class="settings-help">Get notified when loans become overdue</div>
+        </div>
+
+        <div class="settings-right">
+          <label class="switch">
+            <input type="checkbox" {% if overdue_alerts %}checked{% endif %} disabled>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

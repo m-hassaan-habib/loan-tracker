@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Loans · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Loans</h1>
+    <div class="page-subtitle">Manage all loans</div>
+  </div>
+
+  <button type="button" class="btn btn-page-primary" data-bs-toggle="modal" data-bs-target="#addLoanModal">
+    <i class="bi bi-plus-lg"></i>
+    <span>Add Loan</span>
+  </button>
+</div>
+
+<div class="card-surface">
+  <div class="loans-filters">
+    <div class="dropdown">
+      <button class="btn btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        All Directions
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">All Directions</a></li>
+        <li><a class="dropdown-item" href="#">I Owe</a></li>
+        <li><a class="dropdown-item" href="#">Owed to Me</a></li>
+      </ul>
+    </div>
+
+    <div class="dropdown">
+      <button class="btn btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        All Status
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">All Status</a></li>
+        <li><a class="dropdown-item" href="#">Overdue</a></li>
+        <li><a class="dropdown-item" href="#">Active</a></li>
+        <li><a class="dropdown-item" href="#">Closed</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-loans align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Person</th>
+          <th>Direction</th>
+          <th class="text-end">Principal</th>
+          <th class="text-end">Paid</th>
+          <th class="text-end">Remaining</th>
+          <th class="text-end">Given Date</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for loan in loans %}
+        {% set remaining = (loan.principal or 0) - (loan.paid or 0) %}
+        {% set is_overdue = (loan.status|string|lower) == 'overdue' %}
+        {% set is_closed = (loan.status|string|lower) == 'closed' %}
+        <tr>
+          <td class="fw-semibold">{{ loan.name }}</td>
+
+          <td>
+            {% if loan.direction == 0 %}
+              <span class="pill pill-owe">I Owe</span>
+            {% else %}
+              <span class="pill pill-owed">Owed to Me</span>
+            {% endif %}
+          </td>
+
+          <td class="text-end">Rs {{ "{:,.0f}".format(loan.principal or 0) }}</td>
+          <td class="text-end">Rs {{ "{:,.0f}".format(loan.paid or 0) }}</td>
+          <td class="text-end">Rs {{ "{:,.0f}".format(remaining) }}</td>
+
+
+          <td class="text-end">
+            {{ loan.given_date }}
+          </td>
+
+          <td class="{% if is_overdue %}date-danger{% endif %}">
+            {{ loan.due_date }}
+          </td>
+
+          <td>
+            {% if is_overdue %}
+              <span class="pill pill-status pill-status-overdue">Overdue</span>
+            {% elif is_closed %}
+              <span class="pill pill-status pill-status-closed">closed</span>
+            {% else %}
+              <span class="pill pill-status pill-status-active">Active</span>
+            {% endif %}
+          </td>
+
+          <td class="text-end">
+            <div class="action-icons">
+              <!-- ✅ VIEW -->
+              <a href="{{ url_for('loan_view', loan_id=loan.id) }}" class="action-icon" aria-label="View">
+                <i class="bi bi-eye"></i>
+              </a>
+
+              <!-- ✅ EDIT (goes to POST route) -->
+              <a href="#" class="action-icon" aria-label="Edit"
+                 data-bs-toggle="modal" data-bs-target="#editLoanModal-{{ loan.id }}">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <!-- ✅ DELETE (POST) -->
+              <form method="POST" action="{{ url_for('loan_delete', loan_id=loan.id) }}"
+                    class="d-inline" onsubmit="return confirm('Delete this loan?');">
+                <button type="submit" class="action-icon is-danger" aria-label="Delete"
+                        style="border:0;background:transparent;padding:0;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+
+        <!-- ✅ EDIT MODAL PER ROW -->
+        <div class="modal fade modal-sheet" id="editLoanModal-{{ loan.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Loan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <form method="POST" action="{{ url_for('loan_edit', loan_id=loan.id) }}">
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label">Person *</label>
+                    <select class="form-select" name="person" required>
+                      {% for p in people %}
+                        <option value="{{ p.id }}" {% if p.name == loan.name %}selected{% endif %}>{{ p.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Direction *</label>
+                    <select class="form-select" name="direction" required>
+                      <option value="0" {% if loan.direction == 0 %}selected{% endif %}>I Owe</option>
+                      <option value="1" {% if loan.direction == 1 %}selected{% endif %}>Owed to Me</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Principal Amount (PKR) *</label>
+                    <input class="form-control" name="principal" type="number" min="0" required
+                           value="{{ loan.principal or 0 }}">
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Paid (PKR)</label>
+                    <input class="form-control" name="paid" type="number" min="0"
+                           value="{{ loan.paid or 0 }}">
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Given Date *</label>
+                    <input class="form-control" name="given_date" type="date" required value="{{ loan.given_date }}">
+                  </div>
+
+
+                  <div class="mb-3">
+                    <label class="form-label">Due Date *</label>
+                    <input class="form-control" name="due_date" type="date" required value="{{ loan.due_date }}">
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes" rows="3"
+                              placeholder="Additional notes...">{{ loan.notes or "" }}</textarea>
+                  </div>
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-dark">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        {% if not loans %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">No loans</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD LOAN MODAL -->
+<div class="modal fade modal-sheet" id="addLoanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Loan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="POST" action="{{ url_for('add_loan') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Person *</label>
+            <select class="form-select" name="person" required>
+              <option value="" disabled selected>Select person</option>
+              {% for p in people %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Direction *</label>
+            <select class="form-select" name="direction" required>
+              <option value="0">I Owe</option>
+              <option value="1">Owed to Me</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Principal Amount (PKR) *</label>
+            <input class="form-control" name="principal" type="number" min="0" required placeholder="50000">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Given Date *</label>
+            <input class="form-control" name="given_date" type="date" required>
+          </div>
+
+
+          <div class="mb-3">
+            <label class="form-label">Due Date *</label>
+            <input class="form-control" name="due_date" type="date" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3" placeholder="Additional notes..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Add Loan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

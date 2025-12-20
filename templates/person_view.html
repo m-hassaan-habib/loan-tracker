@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}{{ person.name }} · People · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start gap-3">
+    <a href="{{ url_for('people') }}" class="back-icon" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div>
+      <h1 class="page-title">{{ person.name }}</h1>
+      <div class="page-subtitle">Person Details</div>
+    </div>
+  </div>
+
+  <!-- If you don't have a person edit route yet, keep this as a modal trigger only -->
+  <button type="button" class="btn btn-outline-secondary btn-page-primary" data-bs-toggle="modal" data-bs-target="#editPersonModal">
+    <i class="bi bi-pencil"></i>
+    <span>Edit</span>
+  </button>
+</div>
+
+<div class="person-detail-grid">
+  <div class="mini-card">
+    <div class="mini-card-top">
+      <i class="bi bi-person"></i>
+      <span>Contact Info</span>
+    </div>
+
+    <div class="contact-lines">
+      <div class="contact-line">
+        <i class="bi bi-telephone"></i>
+        <span>{{ person.phone or "-" }}</span>
+      </div>
+      <div class="contact-line">
+        <i class="bi bi-envelope"></i>
+        <span>{{ person.email or "-" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mini-card">
+    <div class="mini-card-top"><span>I Owe Them</span></div>
+    <div class="mini-card-main big amount-negative">Rs {{ i_owe_them }}</div>
+  </div>
+
+  <div class="mini-card">
+    <div class="mini-card-top"><span>They Owe Me</span></div>
+    <div class="mini-card-main big">Rs {{ they_owe_me }}</div>
+  </div>
+</div>
+
+<div class="panel-card">
+  <div class="panel-head d-flex align-items-center justify-content-between">
+    <div class="panel-head-title">Loans</div>
+
+    <button type="button" class="btn btn-dark btn-page-primary" data-bs-toggle="modal" data-bs-target="#addLoanModal">
+      <i class="bi bi-plus-lg"></i>
+      <span>Add Loan</span>
+    </button>
+  </div>
+
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-surface align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width: 34%;">Direction</th>
+            <th class="text-end">Principal</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Remaining</th>
+            <th>Status</th>
+            <th class="text-end" style="width:72px;">&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in loans %}
+          <tr>
+            <td>
+              {% if l.direction == 0 %}
+                <span class="pill pill-owe">I Owe</span>
+              {% else %}
+                <span class="pill pill-owed">Owed to Me</span>
+              {% endif %}
+            </td>
+            <td class="text-end">Rs {{ l.principal }}</td>
+            <td class="text-end">Rs {{ l.paid }}</td>
+            <td class="text-end fw-semibold">Rs {{ (l.principal - l.paid) }}</td>
+            <td>
+              {% if l.status == "Overdue" %}
+                <span class="pill pill-overdue">overdue</span>
+              {% elif l.status == "Closed" %}
+                <span class="pill pill-closed">closed</span>
+              {% else %}
+                <span class="pill pill-active">active</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('loan_view', loan_id=l.id) }}" class="action-icon" aria-label="View loan">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-muted">No loans for this person.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Person Modal -->
+<div class="modal fade modal-sheet" id="editPersonModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Person</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- If you have a named endpoint, swap action to url_for('person_edit', person_id=person.id) -->
+      <form method="POST" action="/people/{{ person.id }}/edit">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name *</label>
+            <input type="text" class="form-control" name="name" required value="{{ person.name }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="text" class="form-control" name="phone" value="{{ person.phone or '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" value="{{ person.email or '' }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3">{{ person.notes or '' }}</textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-between">
+          <!-- If you have a delete endpoint, point it there -->
+          <form method="POST" action="/people/{{ person.id }}/delete" class="m-0"
+                onsubmit="return confirm('Delete this person? This will delete all their loans.');">
+            <button type="submit" class="btn btn-outline-danger">Delete Person</button>
+          </form>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Save</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Loan Modal (preselected person) -->
+<div class="modal fade modal-sheet" id="addLoanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Loan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- THIS is the fix: use your real route -->
+      <form method="POST" action="/add_loan">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Person *</label>
+            <select class="form-select" name="person" required>
+              <option value="{{ person.id }}" selected>{{ person.name }}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Direction *</label>
+            <select class="form-select" name="direction" required>
+              <option value="0">I Owe</option>
+              <option value="1">Owed to Me</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Principal Amount (PKR) *</label>
+            <input class="form-control" name="principal" type="number" min="0" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Due Date *</label>
+            <input class="form-control" name="due_date" type="date" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Add Loan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

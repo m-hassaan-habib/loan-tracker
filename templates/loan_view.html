@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Loan Details · LoanTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-start gap-3">
+    <a href="{{ url_for('loans') }}" class="back-icon" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div>
+      <h1 class="page-title">Loan Details</h1>
+      <div class="page-subtitle">View and manage loan</div>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-outline-secondary btn-page-primary" data-bs-toggle="modal" data-bs-target="#editLoanModal">
+    <i class="bi bi-pencil"></i>
+    <span>Edit</span>
+  </button>
+</div>
+
+<div class="loan-detail-grid">
+  <div class="mini-card">
+    <div class="mini-card-top">
+      <i class="bi bi-person"></i>
+      <span>Person</span>
+    </div>
+    <div class="mini-card-main">{{ loan.person_name }}</div>
+    <div class="mini-card-bottom">
+      {% if loan.direction == 0 %}
+        <span class="pill pill-owe">I Owe</span>
+      {% else %}
+        <span class="pill pill-owed">Owed to Me</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mini-card">
+    <div class="mini-card-top">
+      <i class="bi bi-cash-stack"></i>
+      <span>Principal</span>
+    </div>
+    <div class="mini-card-main big">Rs {{ principal }}</div>
+  </div>
+
+  <div class="mini-card">
+    <div class="mini-card-top">
+      <i class="bi bi-calendar3"></i>
+      <span>Due Date</span>
+    </div>
+    <div class="mini-card-main due {% if overdue_days > 0 %}due-bad{% endif %}">
+      {{ loan.due_date }}
+    </div>
+    {% if overdue_days > 0 %}
+      <div class="mini-card-sub due-bad">{{ overdue_days }} days overdue</div>
+    {% endif %}
+  </div>
+
+  <div class="mini-card">
+    <div class="mini-card-top">
+      <span>Status</span>
+    </div>
+    <div class="mini-card-main">
+      {% if status == "Overdue" %}
+        <span class="pill pill-overdue">Overdue</span>
+      {% elif status == "Closed" %}
+        <span class="pill pill-closed">Closed</span>
+      {% else %}
+        <span class="pill pill-active">Active</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="panel-card">
+  <div class="panel-head">
+    <div class="panel-head-title">Payment Progress</div>
+  </div>
+  <div class="panel-body">
+    <div class="progress-meta">
+      <div class="text-muted fw-semibold">Paid: Rs {{ paid }}</div>
+      <div class="text-muted fw-semibold">Remaining: Rs {{ remaining }}</div>
+    </div>
+
+    <div class="progress-track" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-fill" style="width: {{ pct }}%"></div>
+    </div>
+
+    <div class="text-muted fw-semibold mt-2">{{ pct }}% complete</div>
+  </div>
+</div>
+
+<div class="panel-card">
+  <div class="panel-head d-flex align-items-center justify-content-between">
+    <div class="panel-head-title">Payments</div>
+
+    <button type="button" class="btn btn-dark btn-page-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+      <i class="bi bi-plus-lg"></i>
+      <span>Add Payment</span>
+    </button>
+  </div>
+
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-surface align-middle mb-0 table-payments">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th class="text-end">Amount</th>
+            <th>Note</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p.paid_date }}</td>
+            <td class="text-end fw-semibold">Rs {{ p.amount }}</td>
+            <td class="text-muted">{{ p.note or "-" }}</td>
+            <td class="text-end">
+              <form method="POST" action="{{ url_for('payment_delete', loan_id=loan.id, payment_id=p.id) }}"
+                    class="d-inline" onsubmit="return confirm('Delete this payment?');">
+                <button type="submit" class="action-icon is-danger" style="border:0;background:transparent;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-muted">No payments yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-sheet" id="addPaymentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Payment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="POST" action="{{ url_for('payment_add', loan_id=loan.id) }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Date *</label>
+            <input type="date" class="form-control" name="paid_date" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Amount (PKR) *</label>
+            <input type="number" class="form-control" name="amount" min="1" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Note</label>
+            <input type="text" class="form-control" name="note" placeholder="Optional note...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Add Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-sheet" id="editLoanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Loan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="POST" action="{{ url_for('loan_edit', loan_id=loan.id) }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Person *</label>
+            <select class="form-select" name="person" required>
+              <option value="{{ loan.person_id }}" selected>{{ loan.person_name }}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Direction *</label>
+            <select class="form-select" name="direction" required>
+              <option value="0" {% if loan.direction == 0 %}selected{% endif %}>I Owe</option>
+              <option value="1" {% if loan.direction == 1 %}selected{% endif %}>Owed to Me</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Principal Amount (PKR) *</label>
+            <input class="form-control" name="principal" type="number" min="0" required value="{{ loan.principal }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Paid (PKR)</label>
+            <input class="form-control" name="paid" type="number" min="0" value="{{ loan.paid }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Due Date *</label>
+            <input class="form-control" name="due_date" type="date" required value="{{ loan.due_date }}">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3">{{ loan.notes or "" }}</textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer d-flex justify-content-between">
+          <form method="POST" action="{{ url_for('loan_delete', loan_id=loan.id) }}" class="m-0"
+                onsubmit="return confirm('Delete this loan?');">
+            <button type="submit" class="btn btn-outline-danger">Delete Loan</button>
+          </form>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Save</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
