@@ -1182,3 +1182,30 @@ html{ font-size: calc(16px * var(--ui-scale)); }
 .contact-lines{ margin-top:10px; display:flex; flex-direction:column; gap:10px; }
 .contact-line{ display:flex; align-items:center; gap:10px; color:#0f172a; font-weight:700; }
 .contact-line i{ color:#0f172a; opacity:.9; }
+
+.pill-note{
+  display:inline-block;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: rgba(17,24,39,.06);
+  color: #111827;
+  border: 1px solid rgba(17,24,39,.10);
+}
+
+.pill-note-empty{
+  background: transparent;
+  border: 1px dashed rgba(17,24,39,.18);
+  color: rgba(17,24,39,.55);
+}
+.note-full{
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word; 
+}

@@ -52,6 +52,7 @@
           <th class="text-end">Given Date</th>
           <th>Due Date</th>
           <th>Status</th>
+          <th>Notes</th>
           <th class="text-end">Actions</th>
         </tr>
       </thead>
@@ -94,21 +95,29 @@
               <span class="pill pill-status pill-status-active">Active</span>
             {% endif %}
           </td>
-
+          <td>
+            {% if loan.notes %}
+              <span
+                class="pill pill-note has-tooltip"
+                data-note="{{ loan.notes }}"
+              >
+                {{ loan.notes[:15] }}{% if loan.notes|length > 15 %}…{% endif %}
+              </span>
+            {% else %}
+              <span class="pill pill-note pill-note-empty">—</span>
+            {% endif %}
+          </td>
           <td class="text-end">
             <div class="action-icons">
-              <!-- ✅ VIEW -->
               <a href="{{ url_for('loan_view', loan_id=loan.id) }}" class="action-icon" aria-label="View">
                 <i class="bi bi-eye"></i>
               </a>
 
-              <!-- ✅ EDIT (goes to POST route) -->
               <a href="#" class="action-icon" aria-label="Edit"
                  data-bs-toggle="modal" data-bs-target="#editLoanModal-{{ loan.id }}">
                 <i class="bi bi-pencil"></i>
               </a>
 
-              <!-- ✅ DELETE (POST) -->
               <form method="POST" action="{{ url_for('loan_delete', loan_id=loan.id) }}"
                     class="d-inline" onsubmit="return confirm('Delete this loan?');">
                 <button type="submit" class="action-icon is-danger" aria-label="Delete"
@@ -120,7 +129,6 @@
           </td>
         </tr>
 
-        <!-- ✅ EDIT MODAL PER ROW -->
         <div class="modal fade modal-sheet" id="editLoanModal-{{ loan.id }}" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
             <div class="modal-content">
@@ -198,7 +206,6 @@
   </div>
 </div>
 
-<!-- ADD LOAN MODAL -->
 <div class="modal fade modal-sheet" id="addLoanModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sheet-dialog">
     <div class="modal-content">

@@ -16,7 +16,7 @@ CREATE TABLE loans (
     direction TINYINT NOT NULL,
     principal DECIMAL(10,2) NOT NULL,
     paid DECIMAL(10,2) DEFAULT 0,
-    given_date DATE NOT NULL DEFAULT (CURRENT_DATE)
+    given_date DATE NOT NULL DEFAULT (CURRENT_DATE),
     due_date DATE NOT NULL,
     notes TEXT,
     FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE
