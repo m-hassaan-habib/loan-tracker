@@ -1207,5 +1207,44 @@ html{ font-size: calc(16px * var(--ui-scale)); }
   font-size: 14px;
   line-height: 1.35;
   white-space: pre-wrap;
-  word-break: break-word; 
+  word-break: break-word;
+}
+
+.upcoming-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.loan-note-badge {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-weight: 500;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  max-width: 220px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.table-upcoming {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.person-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-cell .loan-note-badge {
+  max-width: 120px;
+}
+
+.text-end {
+    text-align: left !important;
 }

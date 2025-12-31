@@ -30,7 +30,6 @@ def dashboard():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # KPI: I Owe
     cur.execute(
         """
         SELECT
@@ -45,7 +44,6 @@ def dashboard():
     )
     i_owe = cur.fetchone()["i_owe"] or 0
 
-    # KPI: Owed to me
     cur.execute(
         """
         SELECT
@@ -62,7 +60,6 @@ def dashboard():
 
     net_position = owed_to_me - i_owe
 
-    # KPI: Overdue count
     cur.execute(
         """
         SELECT COUNT(*) AS overdue
@@ -73,7 +70,6 @@ def dashboard():
     )
     overdue_loans = cur.fetchone()["overdue"] or 0
 
-    # Overdue list (table)
     cur.execute(
         """
         SELECT
@@ -91,10 +87,7 @@ def dashboard():
     )
     overdue_list = cur.fetchall()
 
-    # Upcoming due dates (next N days)
-    # NOTE: your seed data is in 2024/2025; if today's date is later, you'll see none.
-    # For testing, set window_days = 365 or update your due_date data.
-    window_days = 30
+    window_days = 31
     today = date.today()
     end = today + timedelta(days=window_days)
 
@@ -106,20 +99,42 @@ def dashboard():
           p.name AS person_name,
           l.due_date,
           (l.principal - l.paid) AS remaining,
-          l.direction
+          l.notes
         FROM loans l
         JOIN people p ON l.person_id = p.id
         WHERE (l.principal - l.paid) > 0
           AND l.due_date >= %s
           AND l.due_date <= %s
-        ORDER BY l.due_date ASC
-        LIMIT 6
+          AND l.direction = 0
+        ORDER BY l.due_date ASC, l.id ASC
         """,
         (today, end),
     )
-    upcoming_due = cur.fetchall()
+    upcoming_i_owe = cur.fetchall()
+    upcoming_i_owe_total = sum(float(r["remaining"] or 0) for r in upcoming_i_owe)
 
-    # Mock monthly cashflow (you already had this)
+    cur.execute(
+        """
+        SELECT
+          l.id AS loan_id,
+          p.id AS person_id,
+          p.name AS person_name,
+          l.due_date,
+          (l.principal - l.paid) AS remaining,
+          l.notes
+        FROM loans l
+        JOIN people p ON l.person_id = p.id
+        WHERE (l.principal - l.paid) > 0
+          AND l.due_date >= %s
+          AND l.due_date <= %s
+          AND l.direction = 1
+        ORDER BY l.due_date ASC, l.id ASC
+        """,
+        (today, end),
+    )
+    upcoming_owed_to_me = cur.fetchall()
+    upcoming_owed_to_me_total = sum(float(r["remaining"] or 0) for r in upcoming_owed_to_me)
+
     monthly_cashflow = {
         "labels": ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         "data": [50000, 80000, 50000, 70000, 60000, 40000],
@@ -154,7 +169,10 @@ def dashboard():
         net_position=net_position,
         overdue_loans=overdue_loans,
         overdue_list=overdue_list,
-        upcoming_due=upcoming_due,
+        upcoming_i_owe=upcoming_i_owe,
+        upcoming_i_owe_total=upcoming_i_owe_total,
+        upcoming_owed_to_me=upcoming_owed_to_me,
+        upcoming_owed_to_me_total=upcoming_owed_to_me_total,
         monthly_cashflow=json.dumps(monthly_cashflow),
         outstanding_pie=json.dumps(outstanding_pie),
         theme=theme,
